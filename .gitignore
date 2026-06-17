@@ -1,0 +1,5 @@
+yolo_dataset/
+yolo_dataset.zip
+__pycache__/
+*.pyc
+.env
