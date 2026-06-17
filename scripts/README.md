@@ -27,7 +27,7 @@ Optional flags:
 
 ```bash
 python scripts/upload_roboflow.py \
-  --project mswdd2022-wheat-diseases \
+  --project mswdd2022-wheat \
   --workspace your-workspace-slug \
   --zip
 ```
