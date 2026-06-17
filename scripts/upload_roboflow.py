@@ -9,19 +9,48 @@ import sys
 from pathlib import Path
 
 
+def load_api_key(explicit_key: str | None = None) -> str | None:
+    if explicit_key:
+        return explicit_key
+
+    env_path = Path("/workspace/.env")
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            if key.strip() == "ROBOFLOW_API_KEY" and value.strip():
+                return value.strip().strip('"').strip("'")
+
+    for name in ("ROBOFLOW_API_KEY", "ROBOFLOW_KEY"):
+        value = os.environ.get(name)
+        if value:
+            return value
+
+    try:
+        from roboflow.config import load_roboflow_api_key
+
+        return load_roboflow_api_key()
+    except Exception:
+        return None
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Upload YOLO dataset to Roboflow")
     parser.add_argument("--dataset", type=Path, default=Path("/workspace/yolo_dataset"))
     parser.add_argument("--project", default="mswdd2022-wheat-diseases")
     parser.add_argument("--workspace", default=None, help="Roboflow workspace slug (optional)")
+    parser.add_argument("--api-key", default=None, help="Roboflow API key override")
     parser.add_argument("--batch-name", default="mswdd2022-yolo-import")
     parser.add_argument("--workers", type=int, default=10)
     parser.add_argument("--zip", action="store_true", help="Use zip upload flow")
     args = parser.parse_args()
 
-    api_key = os.environ.get("ROBOFLOW_API_KEY")
+    api_key = load_api_key(args.api_key)
     if not api_key:
-        print("Error: ROBOFLOW_API_KEY environment variable is not set.", file=sys.stderr)
+        print("Error: Roboflow API key not found.", file=sys.stderr)
+        print("Set ROBOFLOW_API_KEY, add it to /workspace/.env, or pass --api-key.", file=sys.stderr)
         print("Get your key at https://app.roboflow.com/settings/api", file=sys.stderr)
         sys.exit(1)
 
